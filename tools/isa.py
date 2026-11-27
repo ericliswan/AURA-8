@@ -232,13 +232,15 @@ def _real_forms() -> list[Form]:
 
 
 REAL_FORMS = _real_forms()
+_FORMS = {(f.slang, f.operands): f for f in REAL_FORMS}
+RESERVED_NAMES = {name for f in REAL_FORMS if f.hardware_only for name in (f.slang, *f.boring)}
 
 
 def form(slang: str, *operands: str) -> Form:
-    match = next((f for f in REAL_FORMS if f.slang == slang and f.operands == operands), None)
-    if match is None:
-        raise KeyError(f"no real form {slang} {operands}")
-    return match
+    try:
+        return _FORMS[slang, operands]
+    except KeyError:
+        raise KeyError(f"no real form {slang} {operands}") from None
 
 
 def _yap(values: tuple, _addr: int) -> list:
@@ -287,7 +289,8 @@ MNEMONICS = _index_mnemonics()
 
 
 def word_count(f: Form, values: tuple) -> int:
-    return 2 * len(values[0]) + 2 if "text" in f.operands else 1
+    """Pseudo operands are registers or text, so the size is known before labels resolve."""
+    return len(f.expand(values, 0)) if f.is_pseudo else 1
 
 
 OPERAND_FIELDS = {  # kind -> (shift, mask) within the 16-bit word
@@ -299,7 +302,10 @@ OPERAND_FIELDS = {  # kind -> (shift, mask) within the 16-bit word
 def encode(f: Form, values: tuple, addr: int) -> list[int]:
     """Encode one statement. Values are already range-checked; constants may be negative."""
     if f.is_pseudo:
-        return [w for real, vals in f.expand(values, addr) for w in encode(real, vals, addr)]
+        words = []
+        for real, vals in f.expand(values, addr):
+            words += encode(real, vals, addr + len(words))
+        return words
     word = f.opcode << 11 | f.a << 8 | f.sub
     for kind, value in zip(f.operands, values):
         if kind == "branch":
@@ -328,6 +334,8 @@ def decode_form(opcode: int, a: int, sub: int) -> Form:
 
 def decode(word: int, addr: int = 0) -> tuple[Form, tuple, bool]:
     """Return (form, operand values, nonstandard). Branch operands decode to absolute targets."""
+    if not 0 <= word <= 0xFFFF:
+        raise ValueError(f"0x{word:X} is not a 16-bit word")
     f = decode_form(word >> 11, (word >> 8) & 7, word & 7)
     values = []
     for kind in f.operands:

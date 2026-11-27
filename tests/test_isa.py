@@ -47,8 +47,27 @@ class Encoding(unittest.TestCase):
         self.assertEqual(len(slang), 41)
         self.assertEqual(len(pseudo), 7)
 
+    def test_pseudo_expansion_encodes_each_word_at_its_own_address(self):
+        skip_twice = isa.Form("SKIP2", (), (), "test-only", expand=lambda _v, addr: [
+            (isa.form("FR", "branch"), (addr + 2,)), (isa.form("FR", "branch"), (addr + 2,))])
+        self.assertEqual(isa.encode(skip_twice, (), 0x10), [0x9801, 0x9800])
+
+    def test_word_count_matches_expansion(self):
+        for f in isa.PSEUDO_FORMS:
+            values = ("hi",) if "text" in f.operands else (1,) * len(f.operands)
+            with self.subTest(f.slang):
+                self.assertEqual(isa.word_count(f, values), len(isa.encode(f, values, 0)))
+
+    def test_reserved_names(self):
+        self.assertEqual(isa.RESERVED_NAMES, {"IYKYK", "INT"})
+
 
 class Decoding(unittest.TestCase):
+    def test_rejects_words_wider_than_16_bits(self):
+        for word in (-1, 0x10000):
+            with self.assertRaises(ValueError):
+                isa.decode(word)
+
     FIB = [0x8004, 0x0005, 0x0005, 0x0005, 0xF800, 0xF901, 0xB0FF, 0x7A00,
            0x4220, 0x9A03, 0x7820, 0x7940, 0x8006, 0xB1FF, 0x0001]
 

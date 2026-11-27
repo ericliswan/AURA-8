@@ -787,7 +787,7 @@ The flags actually written = `flags_we` AND `flagmask(alu_op)`. So `TRADE` (SWAP
 
 **Option A (recommended first): a control ROM.** Use a 256 × 24-bit ROM addressed by `{opcode, instr[2:0]}`. The sub-op bits only matter for the SYS and unary groups; every other opcode just repeats the same control word 8 times. `gen_control.py` builds the image from `isa.py`, so changing an instruction means regenerating the image, not rewiring.
 
-**Option B (exam practice): hand-made logic.** Derive a few signals yourself with Karnaugh maps and check them against the ROM. `alu_b_sel` is just instr[15]. `reg_we` makes a good 5-variable K-map exercise (§17.2).
+**Option B (exam practice): hand-made logic.** Derive a few signals yourself with Karnaugh maps and check them against the ROM. `alu_b_sel` can be just instr[15]; it differs from the ROM only on rows where the table says don't care. `reg_we` makes a good 5-variable K-map exercise (§17.2).
 
 ### 10.7 ALU
 
