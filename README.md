@@ -10,7 +10,7 @@ main:   SIXSEVEN  R0         ; LDI  R0, 67
 flex:   ITSOVER              ; RET  (it's so over)
 ```
 
-The CPU is built in a logic simulator (Logisim-evolution or Digital), and a Python toolchain serves as the golden model: the circuit is tested against the emulator bit for bit and cycle for cycle. The design is AVR-shaped (same flag rules, stack convention and interrupt behaviour), so it doubles as ATmega practice. Every instruction also has a boring, AVR-style alias.
+The CPU is built in a logic simulator (Logisim-evolution or Digital), and a Python toolchain serves as the golden model: the circuit is tested against the emulator bit for bit and cycle for cycle. The design is AVR-shaped (same flag rules, stack convention and interrupt behaviour), so it doubles as ATmega practice. Every instruction also has a boring alias like `RET` or `HALT`.
 
 The full design lives in [SPEC.md](SPEC.md).
 
