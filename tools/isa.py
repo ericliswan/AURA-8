@@ -79,11 +79,6 @@ class Control:
             lsb += self.WIDTHS.get(f.name, 1)
         return word
 
-    @property
-    def flags(self) -> str:
-        written = ALU_FLAGS_WRITTEN[ALU_OPS[self.alu_op]] if self.flags_we else ""
-        return written + ("I" if self.i_set or self.i_clr else "")
-
 
 CONTROL_WORD_BITS = sum(Control.WIDTHS.get(f.name, 1) for f in fields(Control))
 
@@ -293,24 +288,32 @@ def word_count(f: Form, values: tuple) -> int:
     return len(f.expand(values, 0)) if f.is_pseudo else 1
 
 
-OPERAND_FIELDS = {  # kind -> (shift, mask) within the 16-bit word
+OPERAND_FIELDS = {
     "Rd": (8, 7), "Ra": (8, 7), "Rb": (5, 7), "[Rb]": (5, 7), "vector": (3, 0x1F),
     "K": (0, 0xFF), "k": (0, 0xFF), "target": (0, 0xFF), "branch": (0, 0xFF),
 }
 
 
+def _operand_range(kind: str, mask: int) -> range:
+    if kind == "K":
+        return range(-128, 256)
+    return range(mask + 1)
+
+
 def encode(f: Form, values: tuple, addr: int) -> list[int]:
-    """Encode one statement. Values are already range-checked; constants may be negative."""
+    """Encode one statement. Branch values are absolute targets; K may be negative."""
     if f.is_pseudo:
         words = []
         for real, vals in f.expand(values, addr):
             words += encode(real, vals, addr + len(words))
         return words
     word = f.opcode << 11 | f.a << 8 | f.sub
-    for kind, value in zip(f.operands, values):
+    for kind, value in zip(f.operands, values, strict=True):
+        shift, mask = OPERAND_FIELDS[kind]
+        if value not in _operand_range(kind, mask):
+            raise ValueError(f"{kind} value {value} out of range in {f.slang}")
         if kind == "branch":
             value -= addr + 1
-        shift, mask = OPERAND_FIELDS[kind]
         word |= (value & mask) << shift
     return [word]
 
@@ -335,7 +338,7 @@ def decode_form(opcode: int, a: int, sub: int) -> Form:
 def decode(word: int, addr: int = 0) -> tuple[Form, tuple, bool]:
     """Return (form, operand values, nonstandard). Branch operands decode to absolute targets."""
     if not 0 <= word <= 0xFFFF:
-        raise ValueError(f"0x{word:X} is not a 16-bit word")
+        raise ValueError(f"{word:#x} is not a 16-bit word")
     f = decode_form(word >> 11, (word >> 8) & 7, word & 7)
     values = []
     for kind in f.operands:

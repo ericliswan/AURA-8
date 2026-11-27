@@ -30,6 +30,12 @@ class Encoding(unittest.TestCase):
         self.assertEqual(encode_one("MANIFEST", ("Rd", "K"), (0, -5)), [0xF8FB])
         self.assertEqual(encode_one("FR", ("branch",), (0x0A,), 0x10), [0x98F9])
 
+    def test_rejects_bad_operands(self):
+        for slang, operands, values in [("AURA", ("Rd", "Rb"), (1,)), ("LURK", ("Rd", "k"), (8, 0)),
+                                        ("LURK", ("Rd", "k"), (0, 0x100)), ("IYKYK", ("vector",), (32,))]:
+            with self.subTest(values=values), self.assertRaises(ValueError):
+                encode_one(slang, operands, values)
+
     def test_int_words(self):
         self.assertEqual([isa.int_word(v) for v in (1, 2, 3)], [0x000F, 0x0017, 0x001F])
 
