@@ -85,7 +85,7 @@ class Control:
         return written + ("I" if self.i_set or self.i_clr else "")
 
 
-CONTROL_WORD_BITS = 24
+CONTROL_WORD_BITS = sum(Control.WIDTHS.get(f.name, 1) for f in fields(Control))
 
 
 def _alu_write(op: str, imm: int, flags: bool = True) -> Control:
@@ -235,14 +235,18 @@ REAL_FORMS = _real_forms()
 
 
 def form(slang: str, *operands: str) -> Form:
-    return next(f for f in REAL_FORMS if f.slang == slang and f.operands == operands)
+    match = next((f for f in REAL_FORMS if f.slang == slang and f.operands == operands), None)
+    if match is None:
+        raise KeyError(f"no real form {slang} {operands}")
+    return match
 
 
 def _yap(values: tuple, _addr: int) -> list:
     (text,) = values
-    tty = IO_ADDRESS["TTY"]
-    chars = [step for ch in text
-             for step in ((form("MANIFEST", "Rd", "K"), (7, ord(ch))), (form("POST", "k", "Ra"), (tty, 7)))]
+    if any(ord(ch) > 0xFF for ch in text):
+        raise ValueError("YAP characters must fit in 8 bits")
+    manifest, post, tty = form("MANIFEST", "Rd", "K"), form("POST", "k", "Ra"), IO_ADDRESS["TTY"]
+    chars = [step for ch in text for step in ((manifest, (7, ord(ch))), (post, (tty, 7)))]
     return [(form("STASH", "Ra"), (7,)), *chars, (form("GRAB", "Rd"), (7,))]
 
 
@@ -286,64 +290,57 @@ def word_count(f: Form, values: tuple) -> int:
     return 2 * len(values[0]) + 2 if "text" in f.operands else 1
 
 
+OPERAND_FIELDS = {  # kind -> (shift, mask) within the 16-bit word
+    "Rd": (8, 7), "Ra": (8, 7), "Rb": (5, 7), "[Rb]": (5, 7), "vector": (3, 0x1F),
+    "K": (0, 0xFF), "k": (0, 0xFF), "target": (0, 0xFF), "branch": (0, 0xFF),
+}
+
+
 def encode(f: Form, values: tuple, addr: int) -> list[int]:
     """Encode one statement. Values are already range-checked; constants may be negative."""
     if f.is_pseudo:
         return [w for real, vals in f.expand(values, addr) for w in encode(real, vals, addr)]
-    a, payload = f.a, f.sub
+    word = f.opcode << 11 | f.a << 8 | f.sub
     for kind, value in zip(f.operands, values):
-        if kind in ("Rd", "Ra"):
-            a = value
-        elif kind in ("Rb", "[Rb]"):
-            payload |= value << 5
-        elif kind == "branch":
-            payload |= (value - addr - 1) & 0xFF
-        elif kind == "vector":
-            payload |= value << 3
-        else:
-            payload |= value & 0xFF
-    return [f.opcode << 11 | a << 8 | payload]
+        if kind == "branch":
+            value -= addr + 1
+        shift, mask = OPERAND_FIELDS[kind]
+        word |= (value & mask) << shift
+    return [word]
+
+
+def _decode_table() -> dict[tuple[int, int, int], Form]:
+    table = {}
+    for f in REAL_FORMS:
+        a = f.a if f.opcode == OP_BRANCH else 0
+        subs = [f.sub] if f.opcode in (OP_SYS, OP_UNARY) else range(8)
+        for sub in subs:
+            table[f.opcode, a, sub] = f
+    return table
+
+
+_DECODE = _decode_table()
 
 
 def decode_form(opcode: int, a: int, sub: int) -> Form:
-    for f in REAL_FORMS:
-        if f.opcode != opcode:
-            continue
-        if opcode == OP_BRANCH and f.a != a:
-            continue
-        if opcode in (OP_SYS, OP_UNARY) and f.sub != sub:
-            continue
-        return f
-    raise AssertionError(f"no form for opcode {opcode:05b}")
+    return _DECODE[opcode, a if opcode == OP_BRANCH else 0, sub]
 
 
 def decode(word: int, addr: int = 0) -> tuple[Form, tuple, bool]:
     """Return (form, operand values, nonstandard). Branch operands decode to absolute targets."""
-    opcode, a, b, imm = word >> 11, (word >> 8) & 7, (word >> 5) & 7, word & 0xFF
-    f = decode_form(opcode, a, word & 7)
+    f = decode_form(word >> 11, (word >> 8) & 7, word & 7)
     values = []
     for kind in f.operands:
-        if kind in ("Rd", "Ra"):
-            values.append(a)
-        elif kind in ("Rb", "[Rb]"):
-            values.append(b)
-        elif kind == "branch":
-            values.append((addr + 1 + imm) & 0xFF)
-        elif kind == "vector":
-            values.append(imm >> 3)
-        else:
-            values.append(imm)
+        shift, mask = OPERAND_FIELDS[kind]
+        value = (word >> shift) & mask
+        values.append((addr + 1 + value) & 0xFF if kind == "branch" else value)
     values = tuple(values)
     return f, values, encode(f, values, addr) != [word]
 
 
-def control_for(opcode: int, sub: int) -> Control:
-    return decode_form(opcode, 0, sub).control
-
-
 def control_rom() -> list[Control]:
     """Decoder ROM contents, addressed by {opcode, instr[2:0]} (SPEC §10.6)."""
-    return [control_for(addr >> 3, addr & 7) for addr in range(256)]
+    return [decode_form(addr >> 3, 0, addr & 7).control for addr in range(256)]
 
 
 def int_word(vector: int) -> int:
@@ -372,6 +369,5 @@ def disassemble(word: int, addr: int = 0, symbols: dict[int, str] | None = None,
     name = f.boring[0] if boring else f.slang
     ops = ", ".join(format_operand(k, v, symbols or {}) for k, v in zip(f.operands, values))
     text = f"{name} {ops}".rstrip()
-    if f.hardware_only:
-        return f"{text}  ; INT (hardware only)"
-    return f"{text}  ; nonstandard" if nonstandard else text
+    notes = ["INT (hardware only)"] * f.hardware_only + ["nonstandard"] * nonstandard
+    return f"{text}  ; {', '.join(notes)}" if notes else text

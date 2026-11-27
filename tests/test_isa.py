@@ -1,6 +1,10 @@
+import sys
 import unittest
+from pathlib import Path
 
-import isa
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
+
+import isa  # noqa: E402
 
 
 def encode_one(slang, operands, values, addr=0):
@@ -33,6 +37,10 @@ class Encoding(unittest.TestCase):
         words = isa.encode(isa.MNEMONICS["YAP"][0], ("hi",), 0)
         self.assertEqual(words, [0x0F00, 0xFF68, 0xB7F5, 0xFF69, 0xB7F5, 0x2F00])
 
+    def test_yap_rejects_wide_characters(self):
+        with self.assertRaises(ValueError):
+            isa.encode(isa.MNEMONICS["YAP"][0], ("\u2192",), 0)
+
     def test_mnemonic_counts(self):
         slang = {f.slang for f in isa.REAL_FORMS if not f.hardware_only}
         pseudo = {f.slang for f in isa.PSEUDO_FORMS if f.slang not in slang}
@@ -44,11 +52,25 @@ class Decoding(unittest.TestCase):
     FIB = [0x8004, 0x0005, 0x0005, 0x0005, 0xF800, 0xF901, 0xB0FF, 0x7A00,
            0x4220, 0x9A03, 0x7820, 0x7940, 0x8006, 0xB1FF, 0x0001]
 
-    def test_every_word_round_trips(self):
+    @staticmethod
+    def must_be_zero(word):
+        opcode = word >> 11
+        if opcode == isa.OP_SYS:
+            return 0x0700 if word & 7 == 7 else 0x07F8
+        if opcode in (0b00001, 0b00101):
+            return 0x00FF
+        if opcode in (0b10000, 0b10001):
+            return 0x0700
+        if opcode == isa.OP_UNARY:
+            return 0x00F8
+        return 0x001F if opcode >> 3 == 0b01 or opcode in (0b00010, 0b00011, 0b00100, 0b00110, 0b00111) else 0
+
+    def test_nonstandard_means_must_be_zero_bits_set(self):
         for word in range(1 << 16):
             f, values, nonstandard = isa.decode(word, 0x40)
-            reencoded = isa.encode(f, values, 0x40)[0]
-            self.assertEqual(reencoded == word, not nonstandard, hex(word))
+            self.assertEqual(nonstandard, bool(word & self.must_be_zero(word)), hex(word))
+            standard = word & ~self.must_be_zero(word)
+            self.assertEqual(isa.encode(f, values, 0x40), [standard], hex(word))
 
     def test_fib_listing(self):
         text = [isa.disassemble(w, addr) for addr, w in enumerate(self.FIB)]
@@ -59,7 +81,15 @@ class Decoding(unittest.TestCase):
     def test_nonstandard_and_int(self):
         self.assertEqual(isa.disassemble(0x0020), "CHILL  ; nonstandard")
         self.assertEqual(isa.disassemble(0x0017), "IYKYK 0x02  ; INT (hardware only)")
+        self.assertEqual(isa.disassemble(0x0117), "IYKYK 0x02  ; INT (hardware only), nonstandard")
         self.assertEqual(isa.disassemble(0x0001, boring=True), "HALT")
+
+    def test_operand_fields(self):
+        self.assertEqual(isa.disassemble(0x3260), "LURK R2, [R3]")
+        self.assertEqual(isa.disassemble(0x3B40), "POST [R2], R3")
+        self.assertEqual(isa.disassemble(0x0B00), "STASH R3")
+        self.assertEqual(isa.disassemble(0xBC00), "GLOWUP R4")
+        self.assertEqual(isa.disassemble(0x98FF, 0x10), "FR 0x10")
 
 
 if __name__ == "__main__":
