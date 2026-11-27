@@ -104,4 +104,4 @@ Software first, so there's always a known-good answer to test against. Then the 
 
 ## License
 
-[GPL-3.0](LICENSE). Copyright (C) 2026 Eric Liswan.
+[GPL-3.0](LICENSE). Copyright (C) 2026 ericliswan.
