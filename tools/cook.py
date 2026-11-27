@@ -3,6 +3,7 @@
 
 import argparse
 import difflib
+import operator
 import re
 import sys
 from dataclasses import dataclass, field
@@ -282,6 +283,10 @@ class Expression:
                        col, max(1, len(text)))
 
 
+BINARY_OPS = {"|": operator.or_, "^": operator.xor, "&": operator.and_, "<<": operator.lshift,
+              ">>": operator.rshift, "+": operator.add, "-": operator.sub, "*": operator.mul}
+
+
 def apply_binary(op: str, a: int, b: int, col: int) -> int:
     if op in "/%" and b == 0:
         raise AsmError("syntax", "division by zero", col)
@@ -292,8 +297,7 @@ def apply_binary(op: str, a: int, b: int, col: int) -> int:
         return quotient if (a < 0) == (b < 0) else -quotient
     if op == "%":
         return a - b * apply_binary("/", a, b, col)
-    return {"|": a | b, "^": a ^ b, "&": a & b, "<<": a << b if op == "<<" else 0,
-            ">>": a >> b, "+": a + b, "-": a - b, "*": a * b}[op]
+    return BINARY_OPS[op](a, b)
 
 
 def check_range(value: int, bounds: tuple[int, int], op: Operand) -> int:
