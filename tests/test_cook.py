@@ -116,10 +116,13 @@ class DiagnosticTests(unittest.TestCase):
             ('a: CHILL\na: CHILL\n', "'a' already defined on line 2"),
             (' YAP "a\\q"\n', "unknown escape '\\q'"),
             (" .frob 3\n", "unknown directive '.frob'"),
+            (' YAP "\u0100"\n', "'\u0100' doesn't fit in 8 bits"),
+            ("INT: CHILL\n", None),
         ]
         for source, error in cases:
             with self.subTest(source):
-                self.assertIn(error, messages(cook_source(".org 0\n" + source)))
+                errors = messages(cook_source(".org 0\n" + source))
+                self.assertIn(error, errors) if error else self.assertTrue(errors)
 
     def test_rom_overflow(self):
         program = cook_source(".org 0\n" + " CHILL\n" * 257)

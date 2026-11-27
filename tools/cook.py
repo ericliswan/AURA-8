@@ -300,6 +300,12 @@ def apply_binary(op: str, a: int, b: int, col: int) -> int:
     return BINARY_OPS[op](a, b)
 
 
+def check_text(text: str, op: Operand) -> None:
+    wide = next((ch for ch in text if ord(ch) > 0xFF), None)
+    if wide:
+        raise AsmError("immediate", f"'{wide}' doesn't fit in 8 bits", op.col, len(op.text))
+
+
 def check_range(value: int, bounds: tuple[int, int], op: Operand) -> int:
     low, high = bounds
     if low <= value <= high:
@@ -373,7 +379,7 @@ class Assembler:
             raise AsmError("duplicate", f"'{name}' already defined on line {self.defined_on[name].number}",
                            col, len(name))
         upper = name.upper()
-        reason = ("a mnemonic" if upper in isa.MNEMONICS or upper in ("IYKYK", "INT")
+        reason = ("a mnemonic" if upper in isa.MNEMONICS or upper in isa.RESERVED_NAMES
                   else "a register" if REGISTER.fullmatch(name)
                   else "a predefined symbol" if name in isa.PREDEFINED_SYMBOLS
                   else None)
@@ -448,6 +454,9 @@ class Assembler:
             raise AsmError("mnemonic", f"unknown mnemonic '{name}'", col, len(name),
                            f"did you mean {hint}?" if hint else None)
         operands = [self.classify(op) for op in split_operands(rest, rest_col)]
+        for kind, payload, op in operands:
+            if kind == "text":
+                check_text(payload, op)
         kinds = tuple(kind for kind, _, _ in operands)
         stmt.form = next((f for f in forms if tuple(SYNTAX[o] for o in f.operands) == kinds), None)
         if stmt.form is None:
@@ -549,11 +558,6 @@ class Assembler:
         return isa.encode(stmt.form, values, stmt.addr)
 
     def operand_value(self, kind: str, payload, op: Operand, addr: int):
-        if kind == "text":
-            for i, ch in enumerate(payload):
-                if ord(ch) > 0xFF:
-                    raise AsmError("immediate", f"'{ch}' doesn't fit in 8 bits", op.col, len(op.text))
-            return payload
         if SYNTAX[kind] != "expr":
             return payload
         bounds = K_RANGE if kind == "K" else ADDRESS_RANGE
