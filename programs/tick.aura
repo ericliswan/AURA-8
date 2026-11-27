@@ -1,0 +1,39 @@
+; file: tick.aura  (timer counts on HEX while main echoes keys to the terminal)
+; frfr: cycles 4000
+; frfr: key 1000 "hi"
+; frfr: expect tty == "hi"
+; frfr: expect hex == 4
+; frfr: expect mem[0x00] == 4
+.equ TICKS = 0x00             ; RAM byte for the tick count
+.org 0x00
+        BET main          ; reset
+        BET on_timer      ; TIMER
+        WEREBACK              ; BUTTON (unused)
+        WEREBACK              ; KEY    (unused: main polls KBD)
+main:   GHOST    R0
+        POST     TICKS, R0    ; RAM isn't guaranteed to start at 0
+        MANIFEST R0, 99
+        POST     TTOP, R0     ; compare match every 100 timer ticks
+        MANIFEST R0, 0b011    ; enable, prescaler /8 -> one interrupt per 800 cycles
+        POST     TCTRL, R0
+        MANIFEST R0, 0b001    ; IMASK: TIMER only
+        POST     IMASK, R0
+        DOOMSCROLL            ; interrupts on
+echo:   LURK     R1, KBD      ; 0 means no key
+        SUS      R1           ; Z = 1 if R1 == 0
+        FR       echo         ; <- an interrupt can land between SUS and FR!
+        POST     TTY, R1
+        BET  echo
+
+on_timer:
+        STASH     R0
+        LURK     R0, VIBES    ; save the flags (see the arrow above)
+        STASH     R0
+        LURK     R0, TICKS
+        GLOWUP   R0
+        POST     TICKS, R0
+        POST     HEX, R0
+        GRAB    R0
+        POST     VIBES, R0    ; restore the flags
+        GRAB    R0
+        WEREBACK

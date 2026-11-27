@@ -1,0 +1,11 @@
+; file: hello.aura  (the classic, but slang)
+; frfr: expect tty == "aura +1\n"
+; frfr: expect cycles == 20
+; frfr: expect halted
+.org 0x00
+        BET main        ; 0x00 reset vector
+        WEREBACK            ; 0x01 TIMER  (unused)
+        WEREBACK            ; 0x02 BUTTON (unused)
+        WEREBACK            ; 0x03 KEY    (unused)
+main:   YAP "aura +1\n"     ; 18 words: STASH R7, 8 x (MANIFEST + POST), GRAB R7
+        TOUCHGRASS
