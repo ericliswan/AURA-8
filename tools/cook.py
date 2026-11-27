@@ -35,6 +35,7 @@ K_RANGE = (-128, 255)
 ADDRESS_RANGE = (0, 0xFF)
 WORD_RANGE = (-0x8000, 0xFFFF)
 MAX_SHIFT = 64
+MAX_NUMBER_DIGITS = 66
 WEREBACK_WORD = isa.encode(isa.form("WEREBACK"), (), 0)[0]
 REGISTER = re.compile(r"[Rr](\d+)")
 NAME = re.compile(r"[A-Za-z_]\w*")
@@ -107,6 +108,7 @@ class Statement:
     size: int = 0
     is_word: bool = False
     words: list[int] = field(default_factory=list)
+    constants_known: int = 0
 
 
 @dataclass
@@ -269,6 +271,8 @@ class Expression:
             return self.lookup(".", col, 1)
         if kind == "number":
             base = {"0x": 16, "0b": 2}.get(text[:2].lower(), 10)
+            if len(text) > MAX_NUMBER_DIGITS:
+                raise AsmError("syntax", "number is too long", col, len(text))
             return int(text[2:] if base != 10 else text, base)
         if kind == "char":
             return ord(unescape(text[1:-1], col + 1))
@@ -297,7 +301,10 @@ def apply_binary(op: str, a: int, b: int, col: int) -> int:
         return quotient if (a < 0) == (b < 0) else -quotient
     if op == "%":
         return a - b * apply_binary("/", a, b, col)
-    return BINARY_OPS[op](a, b)
+    result = BINARY_OPS[op](a, b)
+    if result.bit_length() > MAX_SHIFT:
+        raise AsmError("syntax", "value is too large", col)
+    return result
 
 
 def check_text(text: str, op: Operand) -> None:
@@ -325,6 +332,8 @@ class Assembler:
         self.statements: list[Statement] = []
         self.labels: dict[str, tuple[int, Line, int]] = {}
         self.constants: dict[str, int] = {}
+        self.constant_order: dict[str, int] = {}
+        self.visible_constants: int | None = None
         self.aliases: dict[str, int] = {}
         self.defined_on: dict[str, Line] = {}
         self.used: set[str] = set()
@@ -365,7 +374,7 @@ class Assembler:
             if text[rest_col:].strip():
                 raise AsmError("syntax", "expected a mnemonic or directive", rest_col + 1)
             if label:
-                self.statements.append(Statement(line, self.addr))
+                self.statements.append(Statement(line, self.addr, constants_known=len(self.constants)))
             return
         name, col = head.group(1), head.start(1) + 1
         rest, rest_col = text[head.end():], head.end() + 1
@@ -403,6 +412,7 @@ class Assembler:
             self.check_name(target, target_col)
             if directive == ".equ":
                 self.constants[target] = self.evaluate(value, self.addr)
+                self.constant_order[target] = len(self.constant_order)
             else:
                 register = self.register(value)
                 if register is None:
@@ -419,7 +429,7 @@ class Assembler:
             if not operands:
                 raise AsmError("syntax", ".word needs at least one value", col, len(name))
             self.statements.append(Statement(line, self.addr, operands=operands, size=len(operands),
-                                             is_word=True))
+                                             is_word=True, constants_known=len(self.constants)))
             self.addr += len(operands)
         elif directive == ".include":
             self.include(operands, col, name, line, path, including)
@@ -446,7 +456,7 @@ class Assembler:
 
     def instruction(self, name: str, col: int, rest: str, rest_col: int, line: Line) -> None:
         forms = isa.MNEMONICS.get(name.upper())
-        stmt = Statement(line, self.addr, size=1)
+        stmt = Statement(line, self.addr, size=1, constants_known=len(self.constants))
         self.statements.append(stmt)
         self.addr += 1
         if not forms:
@@ -510,7 +520,10 @@ class Assembler:
         if name in self.labels:
             return self.labels[name][0]
         if name in self.constants:
-            return self.constants[name]
+            if self.visible_constants is None or self.constant_order[name] < self.visible_constants:
+                return self.constants[name]
+            raise AsmError("symbol", f"'{name}' is used before its .equ", col, width,
+                           f"it's defined on line {self.defined_on[name].number}")
         if name in isa.PREDEFINED_SYMBOLS:
             return isa.PREDEFINED_SYMBOLS[name]
         if name in self.aliases:
@@ -524,6 +537,7 @@ class Assembler:
     def second_pass(self) -> None:
         too_big = None
         for stmt in self.statements:
+            self.visible_constants = stmt.constants_known
             try:
                 stmt.words = self.encode(stmt)
             except AsmError as err:

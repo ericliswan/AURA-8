@@ -118,6 +118,9 @@ class DiagnosticTests(unittest.TestCase):
             (" .frob 3\n", "unknown directive '.frob'"),
             (' YAP "\u0100"\n', "'\u0100' doesn't fit in 8 bits"),
             ("INT: CHILL\n", None),
+            (" MANIFEST R0, X\n.equ X = 5\n", "'X' is used before its .equ"),
+            (f".equ X = {'9' * 5000}\n", "number is too long"),
+            (".equ A = 1 << 63\n.equ B = A * A\n", "value is too large"),
         ]
         for source, error in cases:
             with self.subTest(source):
