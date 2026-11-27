@@ -87,6 +87,11 @@ class DirectiveTests(unittest.TestCase):
             self.assertEqual(ok.words[0], 0xF807)
             looped = cook.assemble(main, source='.include "loop.inc"\n')
             self.assertTrue(any("include" in m for m in messages(looped)), messages(looped))
+            (tmp / "bin.inc").write_bytes(b"\xff\xfe\n")
+            binary = cook.assemble(main, source='.include "bin.inc"\n')
+            self.assertIn("'bin.inc' isn't UTF-8 text", messages(binary))
+            main.write_bytes(b"\xff")
+            self.assertEqual(cook.main([str(main)]), 1)
 
     def test_overlap(self):
         program = cook_source(".org 0\n CHILL\n CHILL\n.org 1\n CHILL\n")
@@ -121,6 +126,9 @@ class DiagnosticTests(unittest.TestCase):
             (" MANIFEST R0, X\n.equ X = 5\n", "'X' is used before its .equ"),
             (f".equ X = {'9' * 5000}\n", "number is too long"),
             (".equ A = 1 << 63\n.equ B = A * A\n", "value is too large"),
+            (f" MANIFEST R0, {'(' * 300}1{')' * 300}\n", "expression is nested too deeply"),
+            (f" MANIFEST R0, {'-' * 1200}1\n", "expression is nested too deeply"),
+            ('.include "a\\0b"\n', "file name contains a NUL byte"),
         ]
         for source, error in cases:
             with self.subTest(source):

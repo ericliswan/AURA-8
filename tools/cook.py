@@ -226,10 +226,13 @@ class Expression:
             if match.lastgroup != "space":
                 self.tokens.append((match.lastgroup, match.group(), col + offset))
             offset = match.end()
-        self.end_col = col + len(text)
+        self.col, self.end_col = col, col + len(text)
 
     def evaluate(self) -> int:
-        value = self.binary(0)
+        try:
+            value = self.binary(0)
+        except RecursionError:
+            raise AsmError("syntax", "expression is nested too deeply", self.col, self.end_col - self.col) from None
         if self.pos < len(self.tokens):
             _, text, col = self.tokens[self.pos]
             raise AsmError("syntax", f"unexpected '{text}'", col, len(text))
@@ -444,6 +447,8 @@ class Assembler:
             raise AsmError("syntax", '.include takes one "file"', col, len(name))
         op = operands[0]
         relative = unescape(op.text[1:-1], op.col + 1)
+        if "\0" in relative:
+            raise AsmError("include", "file name contains a NUL byte", op.col, len(op.text))
         target = path.parent / relative
         if target.resolve() in including:
             raise AsmError("include", f"'{relative}' includes itself", op.col, len(op.text))
@@ -451,6 +456,8 @@ class Assembler:
             text = target.read_text()
         except OSError as err:
             raise AsmError("include", f"can't read '{relative}': {err.strerror}", op.col, len(op.text))
+        except UnicodeDecodeError:
+            raise AsmError("include", f"'{relative}' isn't UTF-8 text", op.col, len(op.text)) from None
         display = str(Path(line.file).parent / relative)
         self.read_file(target, display, text, including + (target.resolve(),))
 
@@ -656,6 +663,9 @@ def main(argv: list[str] | None = None) -> int:
         program = assemble(args.source, werror=args.warnings == "error")
     except OSError as err:
         print(f"cook: can't read {args.source}: {err.strerror}", file=sys.stderr)
+        return 1
+    except UnicodeDecodeError:
+        print(f"cook: {args.source} isn't UTF-8 text", file=sys.stderr)
         return 1
     for diagnostic in program.diagnostics:
         print(diagnostic.format(args.boring), file=sys.stderr)
