@@ -555,7 +555,8 @@ class Assembler:
             return []
         values = tuple(self.operand_value(kind, payload, op, stmt.addr)
                        for kind, (_, payload, op) in zip(stmt.form.operands, stmt.operands))
-        return isa.encode(stmt.form, values, stmt.addr)
+        # Past-the-end statements are never placed; wrap so BRAINROT's `.` still encodes.
+        return isa.encode(stmt.form, values, stmt.addr % isa.ROM_WORDS)
 
     def operand_value(self, kind: str, payload, op: Operand, addr: int):
         if SYNTAX[kind] != "expr":

@@ -125,8 +125,10 @@ class DiagnosticTests(unittest.TestCase):
                 self.assertIn(error, errors) if error else self.assertTrue(errors)
 
     def test_rom_overflow(self):
-        program = cook_source(".org 0\n" + " CHILL\n" * 257)
-        self.assertTrue(any("ROM holds 256" in m for m in messages(program)), messages(program))
+        for source in (" CHILL\n" * 257, ".org 0xFF\n CHILL\n BRAINROT\n"):
+            with self.subTest(source[:12]):
+                program = cook_source(".org 0\n" + source)
+                self.assertIn("needs 257 words; ROM holds 256", messages(program))
 
     def test_warnings_and_werror(self):
         source = ".org 0\n BET main\nmain: TOUCHGRASS\nspare: CHILL\n"
