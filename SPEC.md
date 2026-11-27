@@ -84,7 +84,7 @@ flex:   ITSOVER              ; RET  (it's so over)
 
 ```
 aura-8/
-├── spec.md                  this document
+├── SPEC.md                  this document
 ├── README.md                demo GIF, how to run everything
 ├── hw/
 │   └── aura8.circ        top level + subcircuits (aura8.dig if you use Digital)
