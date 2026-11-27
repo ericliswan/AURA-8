@@ -101,3 +101,7 @@ Software first, so there's always a known-good answer to test against. Then the 
 
 - Python 3.11+
 - Logisim-evolution or Digital
+
+## License
+
+[GPL-3.0](LICENSE). Copyright (C) 2026 Eric Liswan.
