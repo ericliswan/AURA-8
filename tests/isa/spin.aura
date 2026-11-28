@@ -1,0 +1,14 @@
+; SPIN (ROR): C rotates into bit 7
+; frfr: expect chat == [0x81, 0x0c, 0x40, 0x09]
+        MANIFEST R7, 0x01
+        POST     VIBES, R7
+        MANIFEST R0, 0x02
+        SPIN     R0
+        POST     CHAT, R0
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        SPIN     R0
+        POST     CHAT, R0
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        TOUCHGRASS

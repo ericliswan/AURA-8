@@ -1,0 +1,15 @@
+; MUTUALS (AND): V cleared
+; frfr: expect chat == [0x30, 0x00, 0x00, 0x02]
+        MANIFEST R7, 0x08
+        POST     VIBES, R7
+        MANIFEST R0, 0xF0
+        MUTUALS  R0, 0x3C
+        POST     CHAT, R0
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        MANIFEST R1, 0x0F
+        MUTUALS  R0, R1
+        POST     CHAT, R0
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        TOUCHGRASS

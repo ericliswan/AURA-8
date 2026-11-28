@@ -1,0 +1,6 @@
+; DOOMSCROLL (SEI) sets I; with IMASK = 0 TOUCHGRASS still halts
+; frfr: expect R0 == 0x80
+; frfr: expect halted
+        DOOMSCROLL
+        LURK     R0, VIBES
+        TOUCHGRASS

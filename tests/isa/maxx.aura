@@ -1,0 +1,5 @@
+; MAXX (SER = MANIFEST Rd, 0xFF)
+; frfr: expect R0 == 0xFF
+; frfr: expect vibes == 0x00
+        MAXX     R0
+        TOUCHGRASS

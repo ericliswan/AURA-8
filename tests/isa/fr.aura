@@ -1,0 +1,14 @@
+; FR (BREQ, Z = 1): taken, then not taken
+; frfr: expect R0 == 0
+; frfr: expect R1 == 1
+        MANIFEST R0, 0
+        MANIFEST R1, 0
+        MANIFEST R2, 0
+        SUS      R2
+        FR       taken
+        MANIFEST R0, 0xBB
+taken:  MANIFEST R2, 1
+        SUS      R2
+        FR       done
+        MANIFEST R1, 1
+done:   TOUCHGRASS

@@ -1,0 +1,27 @@
+; WEREBACK (RETI) returns from a button interrupt with I set again
+; frfr: button 20 1
+; frfr: expect R1 == 7
+; frfr: expect R2 == 0x80
+; frfr: expect R4 == 0
+; frfr: expect mem[0x00] == 7
+; frfr: expect halted
+        BET      main
+        WEREBACK
+        BET      on_button
+        WEREBACK
+main:   GHOST    R1
+        MANIFEST R0, 0b010
+        POST     IMASK, R0
+        DOOMSCROLL
+wait:   SUS      R1
+        FR       wait
+        LURK     R2, VIBES
+        LURK     R4, IFLAGS
+        LOCKIN
+        TOUCHGRASS
+on_button:
+        MANIFEST R1, 7
+        POST     0x00, R1
+        MANIFEST R3, 0b010
+        POST     IFLAGS, R3
+        WEREBACK

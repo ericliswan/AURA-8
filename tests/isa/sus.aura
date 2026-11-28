@@ -1,0 +1,20 @@
+; SUS (TST): all three forms; V cleared, C kept, Rd unchanged
+; frfr: expect chat == [0x03, 0x05, 0x01, 0x03, 0xf0]
+        MANIFEST R7, 0x09
+        POST     VIBES, R7
+        MANIFEST R0, 0xF0
+        MANIFEST R1, 0x0F
+        SUS      R0, 0x0F
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        SUS      R0, 0x80
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        SUS      R1
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        SUS      R0, R1
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        POST     CHAT, R0
+        TOUCHGRASS

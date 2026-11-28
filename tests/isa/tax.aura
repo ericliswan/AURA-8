@@ -1,0 +1,19 @@
+; TAX (SUB): C is borrow; signed overflow both ways
+; frfr: expect chat == [0x7f, 0x08, 0xff, 0x0d, 0x00, 0x02]
+        MANIFEST R0, 0x80
+        TAX      R0, 1
+        POST     CHAT, R0
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        MANIFEST R0, 0x7F
+        MANIFEST R1, 0x80
+        TAX      R0, R1
+        POST     CHAT, R0
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        MANIFEST R2, 5
+        TAX      R2, 5
+        POST     CHAT, R2
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        TOUCHGRASS

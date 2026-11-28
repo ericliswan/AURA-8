@@ -1,0 +1,14 @@
+; SECURED (BRSH, C = 0): taken, then not taken
+; frfr: expect R0 == 0
+; frfr: expect R1 == 1
+        MANIFEST R0, 0
+        MANIFEST R1, 0
+        MANIFEST R2, 1
+        VIBECHECK R2, 1
+        SECURED  taken
+        MANIFEST R0, 0xBB
+taken:  MANIFEST R2, 0
+        VIBECHECK R2, 1
+        SECURED  done
+        MANIFEST R1, 1
+done:   TOUCHGRASS

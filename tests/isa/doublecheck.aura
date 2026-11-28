@@ -1,0 +1,21 @@
+; DOUBLECHECK (CPC): 16-bit compares
+; frfr: expect chat == [0x00, 0x02, 0x01]
+        MANIFEST R0, 0x00
+        MANIFEST R1, 0x01
+        MANIFEST R2, 0xFF
+        MANIFEST R3, 0x00
+        VIBECHECK R0, R2
+        DOUBLECHECK R1, R3
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        MANIFEST R0, 0x34
+        MANIFEST R1, 0x12
+        MANIFEST R2, 0x34
+        MANIFEST R3, 0x12
+        VIBECHECK R0, R2
+        DOUBLECHECK R1, R3
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        MANIFEST R1, 0x01
+        POST     CHAT, R1
+        TOUCHGRASS

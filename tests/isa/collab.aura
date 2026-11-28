@@ -1,0 +1,18 @@
+; COLLAB (OR)
+; frfr: expect chat == [0x81, 0x04, 0xff, 0x04, 0x00, 0x02]
+        MANIFEST R0, 0x80
+        COLLAB   R0, 0x01
+        POST     CHAT, R0
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        MANIFEST R1, 0x7E
+        COLLAB   R0, R1
+        POST     CHAT, R0
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        MANIFEST R2, 0
+        COLLAB   R2, 0
+        POST     CHAT, R2
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        TOUCHGRASS

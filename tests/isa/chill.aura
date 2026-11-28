@@ -1,0 +1,7 @@
+; CHILL (NOP): one cycle, no effect
+; frfr: expect R0 == 1
+; frfr: expect vibes == 0x00
+; frfr: expect cycles == 3
+        CHILL
+        MANIFEST R0, 1
+        TOUCHGRASS

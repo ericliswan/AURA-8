@@ -1,0 +1,5 @@
+; TOUCHGRASS (HALT) with I = 0 stops the machine
+; frfr: expect halted
+; frfr: expect cycles == 1
+; frfr: expect exit == 0
+        TOUCHGRASS

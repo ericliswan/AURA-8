@@ -1,0 +1,15 @@
+; CRASHOUT (COM): V cleared, C set
+; frfr: expect chat == [0xf0, 0x05, 0x00, 0x03]
+        MANIFEST R7, 0x08
+        POST     VIBES, R7
+        MANIFEST R0, 0x0F
+        CRASHOUT R0
+        POST     CHAT, R0
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        MANIFEST R1, 0xFF
+        CRASHOUT R1
+        POST     CHAT, R1
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        TOUCHGRASS

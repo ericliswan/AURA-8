@@ -1,0 +1,9 @@
+; YAP: prints, preserves R7 and the flags
+; frfr: expect tty == "hi\n"
+; frfr: expect R7 == 0x5A
+; frfr: expect vibes == 0x0F
+        MANIFEST R7, 0x0f
+        POST     VIBES, R7
+        MANIFEST R7, 0x5A
+        YAP      "hi\n"
+        TOUCHGRASS

@@ -1,0 +1,18 @@
+; UNOREVERSE (NEG): C unless zero, V at 0x80
+; frfr: expect chat == [0xff, 0x05, 0x80, 0x0d, 0x00, 0x02]
+        MANIFEST R0, 1
+        UNOREVERSE R0
+        POST     CHAT, R0
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        MANIFEST R1, 0x80
+        UNOREVERSE R1
+        POST     CHAT, R1
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        MANIFEST R2, 0
+        UNOREVERSE R2
+        POST     CHAT, R2
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        TOUCHGRASS

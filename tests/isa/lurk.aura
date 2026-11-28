@@ -1,0 +1,9 @@
+; LURK (LD): direct and indirect
+; frfr: expect R1 == 0x33
+; frfr: expect R3 == 0x33
+        MANIFEST R0, 0x33
+        POST     0x40, R0
+        LURK     R1, 0x40
+        MANIFEST R2, 0x40
+        LURK     R3, [R2]
+        TOUCHGRASS
