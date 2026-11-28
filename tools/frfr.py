@@ -61,7 +61,10 @@ def parse(source: str) -> Spec | None:
             elif kind == "tty":
                 spec.expects.append(("tty", cook.unescape(match[1], 1)))
             elif kind == "mem":
-                spec.expects.append((f"mem[0x{number(match[1]):02X}]", number(match[2])))
+                addr = number(match[1])
+                if addr > 0xFF:
+                    raise ValueError
+                spec.expects.append((f"mem[0x{addr:02X}]", number(match[2])))
             elif kind == "scalar":
                 spec.expects.append((match[1], number(match[2])))
             else:

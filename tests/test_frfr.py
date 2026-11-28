@@ -31,8 +31,9 @@ class Frfr(unittest.TestCase):
         self.assertIsNone(frfr.parse("CHILL\n"))
 
     def test_bad_directive(self):
-        with self.assertRaises(ValueError):
-            frfr.parse("; frfr: expect R9 == 1\n")
+        for text in ("expect R9 == 1", "expect mem[0x100] == 0"):
+            with self.subTest(text), self.assertRaises(ValueError):
+                frfr.parse(f"; frfr: {text}\n")
 
     def test_pass_and_fail(self):
         self.assertEqual(run("; frfr: expect R0 == 5\n; frfr: expect halted\nMANIFEST R0, 5\nTOUCHGRASS\n")[0], 0)
