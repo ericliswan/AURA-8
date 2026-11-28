@@ -1,0 +1,14 @@
+; MOGGED (BRLT, N xor V = 1; the cases where N alone is wrong): taken, then not taken
+; frfr: expect R0 == 0
+; frfr: expect R1 == 1
+        MANIFEST R0, 0
+        MANIFEST R1, 0
+        MANIFEST R2, 0x80
+        VIBECHECK R2, 1
+        MOGGED   taken
+        MANIFEST R0, 0xBB
+taken:  MANIFEST R2, 1
+        VIBECHECK R2, 0x80
+        MOGGED   done
+        MANIFEST R1, 1
+done:   TOUCHGRASS

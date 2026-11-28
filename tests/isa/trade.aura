@@ -1,0 +1,8 @@
+; TRADE (SWAP): nibbles swap, flags untouched
+; frfr: expect R0 == 0x5A
+; frfr: expect vibes == 0x0F
+        MANIFEST R7, 0x0f
+        POST     VIBES, R7
+        MANIFEST R0, 0xA5
+        TRADE    R0
+        TOUCHGRASS

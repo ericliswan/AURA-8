@@ -1,0 +1,9 @@
+; GRAB (POP)
+; frfr: expect R1 == 9
+; frfr: expect R2 == 0xEF
+        MANIFEST R0, 9
+        STASH    R0
+        GHOST    R0
+        GRAB     R1
+        LURK     R2, SP
+        TOUCHGRASS

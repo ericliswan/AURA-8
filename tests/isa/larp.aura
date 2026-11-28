@@ -1,0 +1,15 @@
+; LARP (MOV): flags untouched, even for zero
+; frfr: expect chat == [0x99, 0x0f, 0x00, 0x0f]
+        MANIFEST R7, 0x0f
+        POST     VIBES, R7
+        MANIFEST R1, 0x99
+        LARP     R0, R1
+        POST     CHAT, R0
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        MANIFEST R2, 0
+        LARP     R1, R2
+        POST     CHAT, R1
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        TOUCHGRASS

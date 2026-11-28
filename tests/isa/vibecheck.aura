@@ -1,0 +1,12 @@
+; VIBECHECK (CP): flags of Rd - x, Rd unchanged
+; frfr: expect chat == [0x05, 0x02, 0x05]
+        MANIFEST R0, 5
+        MANIFEST R1, 5
+        VIBECHECK R0, 7
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        VIBECHECK R0, R1
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        POST     CHAT, R0
+        TOUCHGRASS

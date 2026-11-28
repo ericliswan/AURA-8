@@ -1,0 +1,12 @@
+; POST (ST): direct, indirect and I/O
+; frfr: expect mem[0x10] == 0x5A
+; frfr: expect mem[0x11] == 0x5A
+; frfr: expect hex == 0x5A
+; frfr: expect leds == 0x5A
+        MANIFEST R0, 0x5A
+        POST     0x10, R0
+        MANIFEST R1, 0x11
+        POST     [R1], R0
+        POST     HEX, R0
+        POST     LEDS, R0
+        TOUCHGRASS

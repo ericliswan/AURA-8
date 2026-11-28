@@ -46,6 +46,12 @@ class Frfr(unittest.TestCase):
         source = "; frfr: expect exit == 2\nMANIFEST R0, 0xF0\nPOST SP, R0\nSTASH R0\nTOUCHGRASS\n"
         self.assertEqual(run(source)[0], 0)
 
+    def test_isa_and_spec_programs_pass(self):
+        out = io.StringIO()
+        with redirect_stdout(out):
+            code = frfr.main([str(ROOT / "tests" / "isa"), str(ROOT / "programs")])
+        self.assertEqual(code, 0, out.getvalue())
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,13 @@
+; MID (ASR): bit 7 kept
+; frfr: expect chat == [0xc0, 0x05, 0x01, 0x00]
+        MANIFEST R0, 0x81
+        MID      R0
+        POST     CHAT, R0
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        MANIFEST R1, 2
+        MID      R1
+        POST     CHAT, R1
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        TOUCHGRASS

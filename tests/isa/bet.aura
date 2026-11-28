@@ -1,0 +1,9 @@
+; BET (JMP)
+; frfr: expect R0 == 0
+; frfr: expect R1 == 2
+; frfr: expect cycles == 4
+        MANIFEST R0, 0
+        BET      skip
+        MANIFEST R0, 0xBB
+skip:   MANIFEST R1, 2
+        TOUCHGRASS
