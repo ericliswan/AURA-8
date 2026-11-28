@@ -1,0 +1,7 @@
+; LOCKIN (CLI) clears I
+; frfr: expect R0 == 0x00
+; frfr: expect halted
+        DOOMSCROLL
+        LOCKIN
+        LURK     R0, VIBES
+        TOUCHGRASS

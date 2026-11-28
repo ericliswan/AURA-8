@@ -1,0 +1,8 @@
+; BRUH (BREAK) acts like CHILL outside the debugger
+; frfr: expect R0 == 1
+; frfr: expect R1 == 2
+; frfr: expect cycles == 4
+        MANIFEST R0, 1
+        BRUH
+        MANIFEST R1, 2
+        TOUCHGRASS

@@ -1,0 +1,8 @@
+; HITUP (CALL) pushes PC + 1 and jumps
+; frfr: expect R0 == 0xEE
+; frfr: expect mem[0xEF] == 1
+; frfr: expect cycles == 3
+        HITUP    callee
+        TOUCHGRASS
+callee: LURK     R0, SP
+        TOUCHGRASS

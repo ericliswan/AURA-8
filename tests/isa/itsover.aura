@@ -1,0 +1,10 @@
+; ITSOVER (RET) pops the return address
+; frfr: expect R0 == 1
+; frfr: expect R2 == 0xEF
+; frfr: expect mem[0xEF] == 1
+; frfr: expect cycles == 5
+        HITUP    callee
+        LURK     R2, SP
+        TOUCHGRASS
+callee: MANIFEST R0, 1
+        ITSOVER

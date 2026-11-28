@@ -1,0 +1,14 @@
+; FUMBLED (BRLO, C = 1): taken, then not taken
+; frfr: expect R0 == 0
+; frfr: expect R1 == 1
+        MANIFEST R0, 0
+        MANIFEST R1, 0
+        MANIFEST R2, 0
+        VIBECHECK R2, 1
+        FUMBLED  taken
+        MANIFEST R0, 0xBB
+taken:  MANIFEST R2, 1
+        VIBECHECK R2, 1
+        FUMBLED  done
+        MANIFEST R1, 1
+done:   TOUCHGRASS

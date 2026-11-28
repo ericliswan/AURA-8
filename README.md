@@ -64,8 +64,6 @@ All tools are Python 3.11+ with the standard library only.
 | `twin` | Emulator and debugger, with cycle traces and a live LED panel |
 | `frfr` | Test runner ("for real, for real") |
 
-Once the toolchain lands, usage will look like this:
-
 ```sh
 python tools/cook.py programs/fib.aura    # writes fib.hex, fib.lst, fib.sym
 python tools/twin.py programs/fib.hex     # run it
@@ -77,7 +75,7 @@ python tools/frfr.py tests/               # PASS frfr / FAIL (cap detected)
 
 Software first, so there's always a known-good answer to test against. Then the hardware in slices, each of which runs real programs.
 
-- [ ] **M0** Golden model: `isa.py`, `cook`, `twin`, `frfr`
+- [x] **M0** Golden model: `isa.py`, `cook`, `twin`, `frfr`
 - [ ] **M1** ALU
 - [ ] **M2** PC, ROM, register file, decoder, ALU writeback
 - [ ] **M3** Status flags and branches

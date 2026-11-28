@@ -1,0 +1,4 @@
+; SIXSEVEN (MANIFEST Rd, 67)
+; frfr: expect R3 == 67
+        SIXSEVEN R3
+        TOUCHGRASS

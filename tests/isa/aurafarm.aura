@@ -1,0 +1,19 @@
+; AURAFARM (ADC): 16-bit add, and carry in with overflow
+; frfr: expect chat == [0x00, 0x12, 0x00, 0x80, 0x0c]
+        MANIFEST R0, 0xFF
+        MANIFEST R1, 0x00
+        AURA     R0, 1
+        POST     CHAT, R0
+        AURAFARM R1, 0x11
+        POST     CHAT, R1
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        MANIFEST R7, 0x01
+        POST     VIBES, R7
+        MANIFEST R2, 0x7F
+        MANIFEST R3, 0x00
+        AURAFARM R2, R3
+        POST     CHAT, R2
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        TOUCHGRASS

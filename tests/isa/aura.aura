@@ -1,0 +1,19 @@
+; AURA (ADD): carry, overflow and both operand forms
+; frfr: expect chat == [0x80, 0x0c, 0x00, 0x0b, 0x32, 0x00]
+        MANIFEST R0, 0x7F
+        AURA     R0, 1
+        POST     CHAT, R0
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        MANIFEST R0, 0x80
+        MANIFEST R1, 0x80
+        AURA     R0, R1
+        POST     CHAT, R0
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        MANIFEST R2, 0x10
+        AURA     R2, 0x22
+        POST     CHAT, R2
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        TOUCHGRASS

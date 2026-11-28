@@ -1,0 +1,18 @@
+; FELLOFF (DEC): V at 0x80, C kept
+; frfr: expect chat == [0x7f, 0x08, 0x00, 0x02, 0xff, 0x04]
+        MANIFEST R0, 0x80
+        FELLOFF  R0
+        POST     CHAT, R0
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        MANIFEST R1, 1
+        FELLOFF  R1
+        POST     CHAT, R1
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        MANIFEST R2, 0
+        FELLOFF  R2
+        POST     CHAT, R2
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        TOUCHGRASS

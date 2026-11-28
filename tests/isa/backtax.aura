@@ -1,0 +1,18 @@
+; BACKTAX (SBC): 16-bit subtract and sticky Z
+; frfr: expect chat == [0xff, 0x00, 0x00, 0x00, 0x02]
+        MANIFEST R0, 0x00
+        MANIFEST R1, 0x01
+        MANIFEST R2, 0x00
+        TAX      R0, 1
+        POST     CHAT, R0
+        BACKTAX  R1, R2
+        POST     CHAT, R1
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        MANIFEST R4, 5
+        VIBECHECK R4, 5
+        BACKTAX  R4, 5
+        POST     CHAT, R4
+        LURK     R7, VIBES
+        POST     CHAT, R7
+        TOUCHGRASS

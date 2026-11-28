@@ -1,0 +1,7 @@
+; MANIFEST (LDI): negative immediates, flags untouched
+; frfr: expect R7 == 0x2A
+; frfr: expect R6 == 0xFF
+; frfr: expect vibes == 0x00
+        MANIFEST R7, 42
+        MANIFEST R6, -1
+        TOUCHGRASS

@@ -10,3 +10,4 @@ programs/*.sym
 tests/**/*.hex
 tests/**/*.lst
 tests/**/*.sym
+hw/alu_vectors.txt
