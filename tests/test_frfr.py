@@ -31,7 +31,7 @@ class Frfr(unittest.TestCase):
         self.assertIsNone(frfr.parse("CHILL\n"))
 
     def test_bad_directive(self):
-        for text in ("expect R9 == 1", "expect mem[0x100] == 0"):
+        for text in ("expect R9 == 1", "expect mem[0x100] == 0", 'key 0 "\\xE9"', 'key 0 "\u20ac"'):
             with self.subTest(text), self.assertRaises(ValueError):
                 frfr.parse(f"; frfr: {text}\n")
 

@@ -51,7 +51,7 @@ def parse(source: str) -> Spec | None:
                 spec.cycles = number(match[1])
             elif kind == "key":
                 cycle = number(match[1])
-                spec.keys[cycle] = spec.keys.get(cycle, "") + cook.unescape(match[2], 1)
+                spec.keys[cycle] = spec.keys.get(cycle, "") + twin.key_text(cook.unescape(match[2], 1))
             elif kind == "button":
                 spec.buttons[number(match[1])] = number(match[2])
             elif kind == "halted":
