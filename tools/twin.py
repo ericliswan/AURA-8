@@ -59,7 +59,7 @@ def alu(op: int, a: int, b: int, vibes: int) -> tuple[int, int]:
 
 
 def read_hex(path: Path) -> list[int]:
-    lines = path.read_text().split("\n")
+    lines = path.read_text(encoding="utf-8").split("\n")
     raw = lines[0].strip() == "v2.0 raw"
     words = []
     for number, line in enumerate(lines[1:] if raw else lines, 2 if raw else 1):
@@ -79,7 +79,7 @@ def read_hex(path: Path) -> list[int]:
 def read_sym(path: Path) -> dict[int, str]:
     """Map addresses to labels; the first label at an address wins."""
     symbols = {}
-    for line in path.read_text().splitlines():
+    for line in path.read_text(encoding="utf-8").splitlines():
         name, value = line.split()
         symbols.setdefault(int(value, 0), name)
     return symbols
