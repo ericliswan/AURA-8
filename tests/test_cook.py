@@ -156,6 +156,32 @@ class DiagnosticTests(unittest.TestCase):
         self.assertEqual([d.error.message for d in program.diagnostics], ["unknown mnemonic 'FOO'"])
         self.assertEqual(program.diagnostics[0].line.number, 3)
 
+    def test_deep_include_chain(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            for n in range(40):
+                (tmp / f"f{n}.inc").write_text(f'.include "f{n + 1}.inc"\n')
+            (tmp / "f40.inc").write_text("CHILL\n")
+            program = cook.assemble(tmp / "main.aura", source='.include "f0.inc"\n')
+            self.assertIn("includes nest more than 32 deep", messages(program))
+
+    def test_reads_utf8_whatever_the_locale(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = Path(tmp) / "y.aura"
+            src.write_bytes('.org 0\n YAP "\u00e9"\n TOUCHGRASS\n'.encode())
+            self.assertEqual(cook.assemble(src).words[:3], [0x0F00, 0xFFE9, 0xB7F5])
+
+    def test_refuses_clashing_outputs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            src = tmp / "p.lst"
+            src.write_text(".org 0\n TOUCHGRASS\n")
+            for args in ([], ["-o", str(tmp / "q.lst")], ["-o", ""], ["-o", "/"]):
+                with self.subTest(args):
+                    self.assertEqual(cook.main([str(src), *args]), 1)
+            self.assertEqual(src.read_text(), ".org 0\n TOUCHGRASS\n")
+            self.assertFalse((tmp / "q.lst").exists())
+
     def test_warnings_and_werror(self):
         source = ".org 0\n BET main\nmain: TOUCHGRASS\nspare: CHILL\n"
         self.assertEqual(messages(cook_source(source), "warning"), ["label 'spare' is never used"])

@@ -36,6 +36,7 @@ ADDRESS_RANGE = (0, 0xFF)
 WORD_RANGE = (-0x8000, 0xFFFF)
 MAX_SHIFT = 64
 MAX_NUMBER_DIGITS = 66
+MAX_INCLUDE_DEPTH = 32
 WEREBACK_WORD = isa.encode(isa.form("WEREBACK"), (), 0)[0]
 REGISTER = re.compile(r"[Rr](\d+)", re.ASCII)
 NAME = re.compile(r"[A-Za-z_]\w*", re.ASCII)
@@ -449,12 +450,14 @@ class Assembler:
         relative = unescape(op.text[1:-1], op.col + 1)
         if "\0" in relative:
             raise AsmError("include", "file name contains a NUL byte", op.col, len(op.text))
+        if len(including) > MAX_INCLUDE_DEPTH:
+            raise AsmError("include", f"includes nest more than {MAX_INCLUDE_DEPTH} deep", op.col, len(op.text))
         target = path.parent / relative
         try:
             resolved = target.resolve()
             if resolved in including:
                 raise AsmError("include", f"'{relative}' includes itself", op.col, len(op.text))
-            text = target.read_text()
+            text = target.read_text(encoding="utf-8")
         except (OSError, RuntimeError) as err:
             reason = err.strerror if isinstance(err, OSError) else "symlink loop"
             raise AsmError("include", f"can't read '{relative}': {reason}", op.col, len(op.text)) from None
@@ -644,7 +647,7 @@ def assemble(path: Path | str, source: str | None = None, werror: bool = False) 
     """Assemble a file. Pass `source` to assemble text that isn't on disk (includes still resolve from `path`)."""
     path = Path(path)
     asm = Assembler(werror)
-    text = path.read_text() if source is None else source
+    text = path.read_text(encoding="utf-8") if source is None else source
     asm.read_file(path, str(path), text, (path.resolve(),))
     asm.second_pass()
     if not any(d.severity == "error" for d in asm.diagnostics):
@@ -674,12 +677,21 @@ def main(argv: list[str] | None = None) -> int:
     if program.failed:
         return 1
     hex_path = args.output or args.source.with_suffix(".hex")
+    if not hex_path.name:
+        print(f"cook: -o needs a file name, not '{hex_path}'", file=sys.stderr)
+        return 1
     outputs = {hex_path: format_hex(program.words, args.format), hex_path.with_suffix(".lst"): program.listing(),
                hex_path.with_suffix(".sym"): program.symbol_table()}
+    if len(outputs) < 3:
+        print(f"cook: {hex_path} would clash with its own .lst or .sym; use a .hex name", file=sys.stderr)
+        return 1
+    if args.source.resolve() in {out_path.resolve() for out_path in outputs}:
+        print(f"cook: writing {hex_path} and its .lst/.sym would overwrite {args.source}", file=sys.stderr)
+        return 1
     try:
         hex_path.parent.mkdir(parents=True, exist_ok=True)
         for out_path, text in outputs.items():
-            out_path.write_text(text)
+            out_path.write_text(text, encoding="utf-8")
     except OSError as err:
         print(f"cook: can't write {err.filename or hex_path}: {err.strerror}", file=sys.stderr)
         return 1
