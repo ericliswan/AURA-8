@@ -103,9 +103,10 @@ class Files(unittest.TestCase):
             path = Path(d) / "p.hex"
             path.write_text("v2.0 raw\n3*1 abcd\n")
             self.assertEqual(twin.read_hex(path)[:5], [1, 1, 1, 0xABCD, 0])
-            path.write_text("v2.0 raw\n257*0\n")
-            with self.assertRaises(ValueError):
-                twin.read_hex(path)
+            for bad in ("257*0", "0*1", "-1*0", "-1", "10000"):
+                path.write_text(f"v2.0 raw\n{bad}\n")
+                with self.subTest(bad), self.assertRaises(ValueError):
+                    twin.read_hex(path)
 
     def test_cli_exit_codes_and_trace(self):
         with tempfile.TemporaryDirectory() as d:
@@ -118,6 +119,8 @@ class Files(unittest.TestCase):
                 self.assertEqual(twin.main([str(hexfile), "--trace"]), 0)
                 self.assertEqual(twin.main([str(hexfile), "--cycles", "5"]), 1)
                 self.assertEqual(twin.main([str(Path(d) / "missing.hex")]), 3)
+                with self.assertRaises(SystemExit), redirect_stderr(io.StringIO()):
+                    twin.main([str(hexfile), "--key", "0:\u20ac"])
             lines = out.getvalue().splitlines()
             self.assertIn("000006  09  9A03  FUMBLED done           not taken", lines)
             self.assertIn("chat: 0x0D (13)", err.getvalue())

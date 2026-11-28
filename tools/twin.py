@@ -66,11 +66,14 @@ def read_hex(path: Path) -> list[int]:
         for token in line.split():
             count, _, value = token.rpartition("*") if raw else ("", "", token)
             try:
-                words += [int(value, 16)] * (int(count) if count else 1)
+                word, repeat = int(value, 16), int(count) if count else 1
             except ValueError:
                 raise ValueError(f"{path}:{number}: '{token}' isn't a hex word") from None
-            if words[-1] > 0xFFFF:
-                raise ValueError(f"{path}:{number}: '{token}' is wider than 16 bits")
+            if not 0 <= word <= 0xFFFF:
+                raise ValueError(f"{path}:{number}: '{token}' isn't a 16-bit word")
+            if repeat < 1:
+                raise ValueError(f"{path}:{number}: '{token}' repeats fewer than once")
+            words += [word] * repeat
     if len(words) > ROM_WORDS:
         raise ValueError(f"{path}: {len(words)} words don't fit in {ROM_WORDS}")
     return words + [0] * (ROM_WORDS - len(words))
@@ -397,6 +400,12 @@ def scheduled(convert):
     return parse
 
 
+def key_text(text: str) -> str:
+    if not text.isascii():
+        raise ValueError("keys must be ASCII")
+    return text
+
+
 def cosmic_ray(tw: Twin, rng: random.Random) -> str:
     target, bit = rng.randrange(isa.REGISTER_COUNT + IO_BASE), rng.randrange(8)
     if target < isa.REGISTER_COUNT:
@@ -411,7 +420,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="twin", description="Run an AURA-8 program.")
     parser.add_argument("hex", type=Path)
     parser.add_argument("--cycles", type=int, default=1_000_000)
-    parser.add_argument("--key", type=scheduled(str), action="append", default=[], metavar="CYCLE:TEXT")
+    parser.add_argument("--key", type=scheduled(key_text), action="append", default=[], metavar="CYCLE:TEXT")
     parser.add_argument("--button", type=scheduled(lambda v: int(v, 0)), action="append", default=[],
                         metavar="CYCLE:VALUE")
     parser.add_argument("--trace", action="store_true")
