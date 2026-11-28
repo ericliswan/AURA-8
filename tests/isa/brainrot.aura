@@ -3,6 +3,6 @@
 ; frfr: expect R0 == 1
 ; frfr: expect cycles == 50
 ; frfr: expect exit == 1
-        MANIFEST R0, 1
+        GLOWUP   R0
         BRAINROT
         TOUCHGRASS
