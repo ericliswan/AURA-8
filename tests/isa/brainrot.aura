@@ -1,7 +1,7 @@
 ; BRAINROT (BET .): spins until the cycle limit
-; frfr: cycles 50
+; frfr: cycles 300
 ; frfr: expect R0 == 1
-; frfr: expect cycles == 50
+; frfr: expect cycles == 300
 ; frfr: expect exit == 1
         GLOWUP   R0
         BRAINROT
