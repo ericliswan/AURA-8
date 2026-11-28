@@ -73,9 +73,9 @@ def read_hex(path: Path) -> list[int]:
                 raise ValueError(f"{path}:{number}: '{token}' isn't a 16-bit word")
             if repeat < 1:
                 raise ValueError(f"{path}:{number}: '{token}' repeats fewer than once")
+            if len(words) + repeat > ROM_WORDS:
+                raise ValueError(f"{path}: more than {ROM_WORDS} words don't fit in ROM")
             words += [word] * repeat
-    if len(words) > ROM_WORDS:
-        raise ValueError(f"{path}: {len(words)} words don't fit in {ROM_WORDS}")
     return words + [0] * (ROM_WORDS - len(words))
 
 

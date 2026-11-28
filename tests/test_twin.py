@@ -103,7 +103,7 @@ class Files(unittest.TestCase):
             path = Path(d) / "p.hex"
             path.write_text("v2.0 raw\n3*1 abcd\n")
             self.assertEqual(twin.read_hex(path)[:5], [1, 1, 1, 0xABCD, 0])
-            for bad in ("257*0", "0*1", "-1*0", "-1", "10000"):
+            for bad in ("257*0", "256*0 1", "100000000000*0", "0*1", "-1*0", "-1", "10000"):
                 path.write_text(f"v2.0 raw\n{bad}\n")
                 with self.subTest(bad), self.assertRaises(ValueError):
                     twin.read_hex(path)
