@@ -1,5 +1,7 @@
-; COLLAB (OR)
-; frfr: expect chat == [0x81, 0x04, 0xff, 0x04, 0x00, 0x02]
+; COLLAB (OR): V cleared, C kept
+; frfr: expect chat == [0x81, 0x05, 0xff, 0x05, 0x00, 0x03]
+        MANIFEST R7, 0x09
+        POST     VIBES, R7
         MANIFEST R0, 0x80
         COLLAB   R0, 0x01
         POST     CHAT, R0

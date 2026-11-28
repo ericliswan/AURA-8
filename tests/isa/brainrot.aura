@@ -5,3 +5,4 @@
 ; frfr: expect exit == 1
         MANIFEST R0, 1
         BRAINROT
+        TOUCHGRASS
