@@ -1,0 +1,50 @@
+; file: math.aura  (mul8 and a recursive fact)
+; frfr: expect chat == [0x60, 0x18, 120]
+; frfr: expect halted
+.org 0x00
+        BET main
+        WEREBACK
+        WEREBACK
+        WEREBACK
+main:   MANIFEST R0, 200
+        MANIFEST R1, 123
+        HITUP    mul8         ; R1:R0 = 200 * 123 = 24600 = 0x6018
+        POST     CHAT, R1     ; 0x60
+        POST     CHAT, R0     ; 0x18
+        MANIFEST R0, 5
+        HITUP    fact         ; R0 = 5! = 120
+        POST     CHAT, R0
+        TOUCHGRASS
+
+; mul8: unsigned 8 x 8 -> 16-bit multiply (shift-and-add)
+;   in:  R0 = a, R1 = b       out: R1:R0 = a * b (R1 = high byte)
+;   clobbers R2, R3 (caller-saved); preserves R4 (callee-saved)
+mul8:   STASH      R4
+        LARP R2, R0      ; R2 = a
+        LARP R3, R1      ; R3 = b
+        GHOST     R0          ; product = 0
+        GHOST     R1
+        MANIFEST  R4, 8       ; 8 bits to go
+m_loop: HIGHKEY      R0          ; product <<= 1 ...
+        NIPS     R1          ; ... carrying into the high byte
+        HIGHKEY      R3          ; next bit of b -> C
+        SECURED   m_skip      ; C = 0: nothing to add
+        AURA      R0, R2      ; product += a
+        AURAFARM  R1, 0       ; carry into the high byte
+m_skip: FELLOFF   R4          ; FELLOFF leaves C alone and sets Z
+        CAP       m_loop
+        GRAB     R4
+        ITSOVER
+
+; fact: recursive factorial, 8-bit result (n <= 5)
+;   in: R0 = n     out: R0 = n!     clobbers R1-R3
+fact:   VIBECHECK R0, 2
+        FUMBLED   f_base      ; n < 2 (unsigned): answer is 1
+        STASH      R0          ; save n
+        FELLOFF   R0
+        HITUP     fact        ; R0 = (n-1)!
+        GRAB     R1          ; R1 = n
+        HITUP     mul8        ; R1:R0 = (n-1)! * n
+        ITSOVER               ; low byte is in R0
+f_base: MANIFEST  R0, 1
+        ITSOVER

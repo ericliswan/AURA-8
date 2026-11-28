@@ -1,0 +1,19 @@
+; file: fib.aura  (every Fibonacci number that fits in a byte, sent to CHAT)
+; frfr: expect chat == [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233]
+; frfr: expect halted
+.org 0x00
+        BET main
+        WEREBACK
+        WEREBACK
+        WEREBACK
+main:   MANIFEST  R0, 0       ; a
+        MANIFEST  R1, 1       ; b
+loop:   POST      CHAT, R0    ; say a
+        LARP R2, R0
+        AURA      R2, R1      ; c = a + b   (C = 1 if it didn't fit in 8 bits)
+        FUMBLED   done        ; it carried out, so c > 255: stop
+        LARP R0, R1      ; a = b
+        LARP R1, R2      ; b = c
+        BET   loop
+done:   POST      CHAT, R1    ; the last one that fit
+        TOUCHGRASS
