@@ -176,7 +176,11 @@ class DiagnosticTests(unittest.TestCase):
             tmp = Path(tmp)
             src = tmp / "p.lst"
             src.write_text(".org 0\n TOUCHGRASS\n")
-            for args in ([], ["-o", str(tmp / "q.lst")], ["-o", ""], ["-o", "/"]):
+            (tmp / "loop").symlink_to("loop")
+            (tmp / "alias.lst").hardlink_to(src)
+            self.assertEqual(cook.main([str(src), "-o", str(tmp / "loop" / "x.hex")]), 1)
+            for args in ([], ["-o", str(tmp / "q.lst")], ["-o", str(tmp / "q.SYM")], ["-o", ""], ["-o", "/"],
+                         ["-o", str(tmp / "alias.hex")]):
                 with self.subTest(args):
                     self.assertEqual(cook.main([str(src), *args]), 1)
             self.assertEqual(src.read_text(), ".org 0\n TOUCHGRASS\n")

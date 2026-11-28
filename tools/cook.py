@@ -656,6 +656,13 @@ def assemble(path: Path | str, source: str | None = None, werror: bool = False) 
     return Program(asm.words, asm.statements, labels, asm.diagnostics)
 
 
+def same_file(a: Path, b: Path) -> bool:
+    try:
+        return a.samefile(b)
+    except OSError:
+        return False
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="cook", description="Assemble AURA-8 source into a ROM image.")
     parser.add_argument("source", type=Path)
@@ -682,10 +689,10 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     outputs = {hex_path: format_hex(program.words, args.format), hex_path.with_suffix(".lst"): program.listing(),
                hex_path.with_suffix(".sym"): program.symbol_table()}
-    if len(outputs) < 3:
+    if hex_path.suffix.lower() in (".lst", ".sym"):
         print(f"cook: {hex_path} would clash with its own .lst or .sym; use a .hex name", file=sys.stderr)
         return 1
-    if args.source.resolve() in {out_path.resolve() for out_path in outputs}:
+    if any(same_file(args.source, out_path) for out_path in outputs):
         print(f"cook: writing {hex_path} and its .lst/.sym would overwrite {args.source}", file=sys.stderr)
         return 1
     try:
