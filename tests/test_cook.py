@@ -90,8 +90,15 @@ class DirectiveTests(unittest.TestCase):
             (tmp / "bin.inc").write_bytes(b"\xff\xfe\n")
             binary = cook.assemble(main, source='.include "bin.inc"\n')
             self.assertIn("'bin.inc' isn't UTF-8 text", messages(binary))
+            (tmp / "loop1").symlink_to("loop2")
+            (tmp / "loop2").symlink_to("loop1")
+            self.assertTrue(any("can't read 'loop1'" in m for m in messages(
+                cook.assemble(main, source='.include "loop1"\n'))))
             main.write_bytes(b"\xff")
             self.assertEqual(cook.main([str(main)]), 1)
+            main.write_text(".org 0\n TOUCHGRASS\n")
+            (tmp / "out").mkdir()
+            self.assertEqual(cook.main([str(main), "-o", str(tmp / "out")]), 1)
 
     def test_overlap(self):
         program = cook_source(".org 0\n CHILL\n CHILL\n.org 1\n CHILL\n")
@@ -129,6 +136,9 @@ class DiagnosticTests(unittest.TestCase):
             (f" MANIFEST R0, {'(' * 300}1{')' * 300}\n", "expression is nested too deeply"),
             (f" MANIFEST R0, {'-' * 1200}1\n", "expression is nested too deeply"),
             ('.include "a\\0b"\n', "file name contains a NUL byte"),
+            (f" MANIFEST R{'0' * 5000}1, 1\n", f"there is no R{'0' * 5000}1"),
+            (" LARP R\u0661, R0\n", "LARP takes (reg, reg); got (K, reg)"),
+            ("caf\u00e9: CHILL\n", "unknown mnemonic 'caf'"),
         ]
         for source, error in cases:
             with self.subTest(source):
@@ -140,6 +150,11 @@ class DiagnosticTests(unittest.TestCase):
             with self.subTest(source[:12]):
                 program = cook_source(".org 0\n" + source)
                 self.assertIn("needs 257 words; ROM holds 256", messages(program))
+
+    def test_only_newline_ends_a_line(self):
+        program = cook_source(".org 0\n CHILL ; page\x0cbreak\r\nFOO\n")
+        self.assertEqual([d.error.message for d in program.diagnostics], ["unknown mnemonic 'FOO'"])
+        self.assertEqual(program.diagnostics[0].line.number, 3)
 
     def test_warnings_and_werror(self):
         source = ".org 0\n BET main\nmain: TOUCHGRASS\nspare: CHILL\n"

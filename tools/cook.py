@@ -37,9 +37,9 @@ WORD_RANGE = (-0x8000, 0xFFFF)
 MAX_SHIFT = 64
 MAX_NUMBER_DIGITS = 66
 WEREBACK_WORD = isa.encode(isa.form("WEREBACK"), (), 0)[0]
-REGISTER = re.compile(r"[Rr](\d+)")
-NAME = re.compile(r"[A-Za-z_]\w*")
-LABEL = re.compile(r"\s*([A-Za-z_]\w*)\s*:")
+REGISTER = re.compile(r"[Rr](\d+)", re.ASCII)
+NAME = re.compile(r"[A-Za-z_]\w*", re.ASCII)
+LABEL = re.compile(r"\s*([A-Za-z_]\w*)\s*:", re.ASCII)
 DIRECTIVES = (".org", ".equ", ".def", ".word", ".include")
 ESCAPES = {"n": "\n", "t": "\t", "r": "\r", "0": "\0", "\\": "\\", "'": "'", '"': '"'}
 TOKEN = re.compile(r"""
@@ -48,7 +48,7 @@ TOKEN = re.compile(r"""
   | (?P<char>'(?:\\x[0-9A-Fa-f]{2}|\\.|[^\\'])')
   | (?P<name>[A-Za-z_]\w*)
   | (?P<op><<|>>|[-~*/%+&^|(),.])
-""", re.VERBOSE)
+""", re.VERBOSE | re.ASCII)
 BINARY_LEVELS = (("|",), ("^",), ("&",), ("<<", ">>"), ("+", "-"), ("*", "/", "%"))
 SYNTAX = {"Rd": "reg", "Ra": "reg", "Rb": "reg", "[Rb]": "ptr", "K": "expr", "k": "expr",
           "target": "expr", "branch": "expr", "text": "text"}
@@ -355,8 +355,8 @@ class Assembler:
     # Pass 1: lines, directives, label addresses.
 
     def read_file(self, path: Path, display: str, text: str, including: tuple[Path, ...]) -> None:
-        for number, raw in enumerate(text.splitlines(), 1):
-            line = Line(display, number, raw)
+        for number, raw in enumerate(text.split("\n"), 1):
+            line = Line(display, number, raw.removesuffix("\r"))
             try:
                 self.first_pass(line, path, including)
             except AsmError as err:
@@ -372,7 +372,7 @@ class Assembler:
                 self.define_label(label.group(1), label.start(1) + 1, line)
             except AsmError as err:
                 self.report(line, err)
-        head = re.compile(r"\s*(\.?\w+)").match(text, rest_col)
+        head = re.compile(r"\s*(\.?\w+)", re.ASCII).match(text, rest_col)
         if not head:
             if text[rest_col:].strip():
                 raise AsmError("syntax", "expected a mnemonic or directive", rest_col + 1)
@@ -407,7 +407,7 @@ class Assembler:
                   path: Path, including: tuple[Path, ...]) -> None:
         directive = name.lower()
         if directive in (".equ", ".def"):
-            match = re.fullmatch(r"\s*([A-Za-z_]\w*)\s*=\s*(.*?)\s*", rest)
+            match = re.fullmatch(r"\s*([A-Za-z_]\w*)\s*=\s*(.*?)\s*", rest, re.ASCII)
             if not match or not match.group(2):
                 raise AsmError("syntax", f"expected '{directive} NAME = value'", col, len(name))
             target, target_col = match.group(1), rest_col + match.start(1)
@@ -450,16 +450,18 @@ class Assembler:
         if "\0" in relative:
             raise AsmError("include", "file name contains a NUL byte", op.col, len(op.text))
         target = path.parent / relative
-        if target.resolve() in including:
-            raise AsmError("include", f"'{relative}' includes itself", op.col, len(op.text))
         try:
+            resolved = target.resolve()
+            if resolved in including:
+                raise AsmError("include", f"'{relative}' includes itself", op.col, len(op.text))
             text = target.read_text()
-        except OSError as err:
-            raise AsmError("include", f"can't read '{relative}': {err.strerror}", op.col, len(op.text))
+        except (OSError, RuntimeError) as err:
+            reason = err.strerror if isinstance(err, OSError) else "symlink loop"
+            raise AsmError("include", f"can't read '{relative}': {reason}", op.col, len(op.text)) from None
         except UnicodeDecodeError:
             raise AsmError("include", f"'{relative}' isn't UTF-8 text", op.col, len(op.text)) from None
         display = str(Path(line.file).parent / relative)
-        self.read_file(target, display, text, including + (target.resolve(),))
+        self.read_file(target, display, text, including + (resolved,))
 
     def instruction(self, name: str, col: int, rest: str, rest_col: int, line: Line) -> None:
         forms = isa.MNEMONICS.get(name.upper())
@@ -491,10 +493,10 @@ class Assembler:
     def register(self, op: Operand) -> int | None:
         match = REGISTER.fullmatch(op.text)
         if match:
-            number = int(match.group(1))
-            if number >= isa.REGISTER_COUNT:
-                raise AsmError("register", f"there is no R{number}", op.col, len(op.text))
-            return number
+            digits = match.group(1)
+            if len(digits) > 2 or int(digits) >= isa.REGISTER_COUNT:
+                raise AsmError("register", f"there is no {op.text}", op.col, len(op.text))
+            return int(digits)
         return self.aliases.get(op.text)
 
     def classify(self, op: Operand) -> tuple[str, object, Operand]:
@@ -672,10 +674,15 @@ def main(argv: list[str] | None = None) -> int:
     if program.failed:
         return 1
     hex_path = args.output or args.source.with_suffix(".hex")
-    hex_path.parent.mkdir(parents=True, exist_ok=True)
-    hex_path.write_text(format_hex(program.words, args.format))
-    hex_path.with_suffix(".lst").write_text(program.listing())
-    hex_path.with_suffix(".sym").write_text(program.symbol_table())
+    outputs = {hex_path: format_hex(program.words, args.format), hex_path.with_suffix(".lst"): program.listing(),
+               hex_path.with_suffix(".sym"): program.symbol_table()}
+    try:
+        hex_path.parent.mkdir(parents=True, exist_ok=True)
+        for out_path, text in outputs.items():
+            out_path.write_text(text)
+    except OSError as err:
+        print(f"cook: can't write {err.filename or hex_path}: {err.strerror}", file=sys.stderr)
+        return 1
     used = len({a for s in program.statements for a in range(s.addr, s.addr + len(s.words))})
     print(f"cooked {args.source} -> {hex_path} ({used} words)")
     return 0
