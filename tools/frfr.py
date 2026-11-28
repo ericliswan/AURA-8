@@ -95,7 +95,7 @@ def show(value) -> str:
 
 def check(path: Path) -> list[str] | None:
     """Return failure messages, or None if the file has no frfr lines."""
-    source = path.read_text()
+    source = path.read_text(encoding="utf-8")
     spec = parse(source)
     if spec is None:
         return None
