@@ -7,7 +7,7 @@ import isa
 from twin import alu
 
 DEFAULT_OUT = Path(__file__).resolve().parent.parent / "hw" / "alu_vectors.txt"
-HEADER = "A[8] B[8] op[4] Cin Zin R[8] Z N V C"
+HEADERS = {"logisim": "A[8] B[8] op[4] Cin Zin R[8] Z N V C", "digital": "A B op Cin Zin R Z N V C"}
 EDGES = (0x00, 0x01, 0x7F, 0x80, 0xFF)
 BINARY_OPS = range(isa.ALU["INC"])
 UNARY_OPS = range(isa.ALU["INC"], len(isa.ALU_OPS))
@@ -36,9 +36,9 @@ def cases(count: int, seed: int):
         yield rng.choice(BINARY_OPS), rng.randrange(256), rng.randrange(256), rng.randrange(2), rng.randrange(2)
 
 
-def vectors(count: int = 5000, seed: int = 0) -> str:
+def vectors(count: int = 5000, seed: int = 0, fmt: str = "logisim") -> str:
     ops = " ".join(f"{i:X}={name}" for i, name in enumerate(isa.ALU_OPS))
-    lines = [f"# AURA-8 ALU vectors from twin; x = flag not written by that op. op: {ops}", HEADER]
+    lines = [f"# AURA-8 ALU vectors from twin; x = flag not written by that op. op: {ops}", HEADERS[fmt]]
     lines += [vector(*case) for case in cases(count, seed)]
     return "\n".join(lines) + "\n"
 
@@ -48,11 +48,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("-o", "--out", type=Path, default=DEFAULT_OUT)
     parser.add_argument("--random", type=int, default=5000, metavar="N", help="random binary-op cases")
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--format", choices=HEADERS, default="logisim")
     args = parser.parse_args(argv)
-    text = vectors(args.random, args.seed)
+    text = vectors(args.random, args.seed, args.format)
     try:
         args.out.parent.mkdir(parents=True, exist_ok=True)
-        args.out.write_text(text)
+        args.out.write_text(text, encoding="utf-8")
     except OSError as e:
         print(f"gen_alu_vectors: can't write {args.out}: {e.strerror}", file=sys.stderr)
         return 1

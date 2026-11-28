@@ -16,7 +16,8 @@ def row(op, a, b, cin=0, zin=0):
 class GenAluVectors(unittest.TestCase):
     def test_coverage(self):
         lines = gen.vectors().splitlines()
-        self.assertEqual(lines[1], gen.HEADER)
+        self.assertEqual(lines[1], gen.HEADERS["logisim"])
+        self.assertEqual(gen.vectors(0, fmt="digital").splitlines()[1], "A B op Cin Zin R Z N V C")
         self.assertEqual(len(lines) - 2, 8 * 256 * 2 + 8 * 25 * 4 + 5000)
         self.assertEqual(gen.vectors(10, seed=3), gen.vectors(10, seed=3))
 
